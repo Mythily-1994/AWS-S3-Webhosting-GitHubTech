@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blood Bank — Full HTML Project</title>
+<style>
+  :root{font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+  body{margin:0;background:#f5f7fb;color:#111}
+  header{background:#b71c1c;color:#fff;padding:18px 20px}
+  header h1{margin:0;font-size:20px}
+  .container{max-width:1000px;margin:20px auto;padding:16px}
+  .card{background:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(16,24,40,0.06);padding:16px;margin-bottom:16px}
+  form .row{display:flex;gap:10px;flex-wrap:wrap}
+  form label{font-size:13px}
+  input,select,button,textarea{padding:8px;border-radius:6px;border:1px solid #e6e9ef;font-size:14px}
+  .flex{display:flex;gap:10px;align-items:center}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-bottom:1px solid #eef2f6;text-align:left}
+  th{background:#fafafa;font-weight:600}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#f3f4f6}
+  .small{font-size:13px;color:#555}
+  .btn{background:#b71c1c;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.secondary{background:#444;color:#fff}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  @media(max-width:720px){.row{flex-direction:column}}
+</style>
+</head>
+<body class="bg-cover bg-center" style="background-image: linear-gradient(135deg, #a8d0f0, #3f80c8);">
+<header>
+  <h1>Blood Bank Management — Full HTML Project</h1>
+</header>
+
+<div class="container">
+
+  <!-- Blood Stock -->
+  <div class="card">
+    <h3>Blood Stock</h3>
+    <div class="flex" style="justify-content:space-between;align-items:center">
+      <div><strong>Last reset:</strong> <span id="lastReset" class="small pill">—</span></div>
+      <div class="controls">
+        <button class="btn" id="resetStockBtn">Reset Stock</button>
+        <button class="btn secondary" id="exportBtn">Export Data</button>
+        <button class="btn secondary" id="importBtn">Import Data</button>
+      </div>
+    </div>
+    <table id="stockTable">
+      <thead><tr><th>Blood Type</th><th>Units</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Donor Registration -->
+  <div class="card">
+    <h3>Register Donor</h3>
+    <form id="donorForm">
+      <div class="row">
+        <div style="flex:1;min-width:200px">
+          <label for="donorName">Full Name</label><br>
+          <input id="donorName" required />
+        </div>
+        <div style="width:160px">
+          <label for="donorBlood">Blood Type</label><br>
+          <select id="donorBlood" required>
+            <option value="">Select</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div style="width:140px">
+          <label for="donorUnits">Units</label><br>
+          <input id="donorUnits" type="number" min="1" value="1" required />
+        </div>
+        <div style="flex-basis:120px;align-self:end">
+          <button class="btn" type="submit">Register & Add</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Donor Table -->
+  <div class="card">
+    <h3>Donors</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="small">Search by name or blood type:</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="searchDonorInput" placeholder="Search donor..." />
+        <button class="btn secondary" id="searchDonorBtn">Search</button>
+        <button class="btn secondary" id="clearDonorSearch">Clear</button>
+      </div>
+    </div>
+    <table id="donorTable">
+      <thead><tr><th>Name</th><th>Blood</th><th>Units</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Issue Blood -->
+  <div class="card">
+    <h3>Issue Blood (Patient / Hospital)</h3>
+    <form id="issueForm">
+      <div class="row">
+        <div style="flex:1;min-width:200px">
+          <label for="patientName">Patient / Hospital</label><br>
+          <input id="patientName" required />
+        </div>
+        <div style="width:160px">
+          <label for="issueBlood">Blood Type</label><br>
+          <select id="issueBlood" required>
+            <option value="">Select</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div style="width:140px">
+          <label for="issueUnits">Units</label><br>
+          <input id="issueUnits" type="number" min="1" value="1" required />
+        </div>
+        <div style="flex-basis:120px;align-self:end">
+          <button class="btn" type="submit">Issue</button>
+        </div>
+      </div>
+    </form>
+    <p id="issueMsg" class="small" style="margin-top:8px"></p>
+  </div>
+
+  <!-- Patients Table -->
+  <div class="card">
+    <h3>Issued Blood / Patients</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="searchPatientInput" placeholder="Search patient..." />
+      <button class="btn secondary" id="searchPatientBtn">Search</button>
+      <button class="btn secondary" id="clearPatientSearch">Clear</button>
+    </div>
+    <table id="patientTable">
+      <thead><tr><th>Patient/Hospital</th><th>Blood</th><th>Units</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'bloodbank_full_v1';
+
+function nowIso(){ return new Date().toISOString(); }
+
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(e){return null;}
+}
+function saveData(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function defaultData(){
+  return {
+    stock:{'A+':10,'A-':4,'B+':8,'B-':3,'O+':12,'O-':5,'AB+':6,'AB-':2},
+    donors:[],
+    patients:[],
+    lastReset: nowIso()
+  };
+}
+
+// --- Renderers ---
+function renderStock(){
+  const data = loadData() || defaultData();
+  const tbody = document.querySelector('#stockTable tbody');
+  tbody.innerHTML = '';
+  Object.keys(data.stock).forEach(type=>{
+    const tr = document.createElement('tr');
+    const amt = data.stock[type];
+    tr.innerHTML = `<td>${type}</td><td>${amt}</td>`+
+                   `<td><button class='btn secondary' data-type='${type}' data-action='inc'>+1</button> <button class='btn secondary' data-type='${type}' data-action='dec'>-1</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('lastReset').textContent = new Date(data.lastReset).toLocaleString();
+}
+
+function renderDonors(filter=''){
+  const data = loadData() || defaultData();
+  const tbody = document.querySelector('#donorTable tbody');
+  tbody.innerHTML = '';
+  data.donors.filter(d=>{
+    if(!filter) return true;
+    const s = filter.toLowerCase();
+    return d.name.toLowerCase().includes(s) || d.blood.toLowerCase().includes(s);
+  }).forEach((d,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.name}</td><td>${d.blood}</td><td>${d.units}</td><td>${new Date(d.date).toLocaleString()}</td>`+
+                   `<td><button class='btn secondary' data-idx='${idx}' data-action='removeDonor'>Remove</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPatients(filter=''){
+  const data = loadData() || defaultData();
+  const tbody = document.querySelector('#patientTable tbody');
+  tbody.innerHTML = '';
+  data.patients.filter(p=>{
+    if(!filter) return true;
+    const s = filter.toLowerCase();
+    return p.name.toLowerCase().includes(s) || p.blood.toLowerCase().includes(s);
+  }).forEach((p,idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.name}</td><td>${p.blood}</td><td>${p.units}</td><td>${new Date(p.date).toLocaleString()}</td>`+
+                   `<td><button class='btn secondary' data-idx='${idx}' data-action='removePatient'>Remove</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// --- Actions ---
+function changeStock(type, delta){
+  const data = loadData() || defaultData();
+  data.stock[type] = Math.max(0,(data.stock[type]||0)+delta);
+  saveData(data); renderStock();
+}
+
+function registerDonor(name,blood,units){
+  const data = loadData() || defaultData();
+  data.donors.unshift({name,blood,units:Number(units),date:nowIso()});
+  data.stock[blood] = (data.stock[blood]||0)+Number(units);
+  saveData(data); renderStock(); renderDonors();
+}
+
+function issueBlood(name,blood,units){
+  const data = loadData() || defaultData();
+  units = Number(units);
+  if((data.stock[blood]||0)>=units){
+    data.stock[blood]-=units;
+    data.patients.unshift({name,blood,units,date:nowIso()});
+    saveData(data); renderStock(); renderPatients();
+    return {ok:true,msg:`Issued ${units} units of ${blood} to ${name}`};
+  }else{
+    return {ok:false,msg:`Insufficient stock: ${data.stock[blood]||0}`};
+  }
+}
+
+// --- Init ---
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!loadData()) saveData(defaultData());
+  renderStock(); renderDonors(); renderPatients();
+
+  // Stock buttons
+  document.querySelector('#stockTable').addEventListener('click',e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const type = btn.dataset.type; const action = btn.dataset.action;
+    if(action==='inc') changeStock(type,1);
+    if(action==='dec') changeStock(type,-1);
+  });
+
+  // Reset
+  document.getElementById('resetStockBtn').addEventListener('click',()=>{
+    const d = defaultData(); d.lastReset = nowIso(); saveData(d);
+    renderStock(); renderDonors(); renderPatients();
+  });
+
+  // Donor form
+  document.getElementById('donorForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=document.getElementById('donorName').value.trim();
+    const blood=document.getElementById('donorBlood').value;
+    const units=document.getElementById('donorUnits').value;
+    if(!name||!blood||!units)return alert('Fill all fields');
+    registerDonor(name,blood,units);
+    e.target.reset();
+  });
+
+  // Issue form
+  document.getElementById('issueForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=document.getElementById('patientName').value.trim();
+    const blood=document.getElementById('issueBlood').value;
+    const units=document.getElementById('issueUnits').value;
+    const result = issueBlood(name,blood,units);
+    const msg=document.getElementById('issueMsg');
+    msg.textContent=result.msg; msg.style.color=result.ok?'green':'crimson';
+    e.target.reset();
+  });
+
+  // Donor table remove
+  document.querySelector('#donorTable').addEventListener('click',e=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    const idx=Number(btn.dataset.idx);
+    if(btn.dataset.action==='removeDonor'){
+      const data=loadData(); data.donors.splice(idx,1); saveData(data); renderDonors();
+    }
+  });
+
+  // Patient table remove
+  document.querySelector('#patientTable').addEventListener('click',e=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    const idx=Number(btn.dataset.idx);
+    if(btn.dataset.action==='removePatient'){
+      const data=loadData(); data.patients.splice(idx,1); saveData(data); renderPatients();
+    }
+  });
+
+  // Search donors
+  document.getElementById('searchDonorBtn').addEventListener('click',()=>{
+    const v=document.getElementById('searchDonorInput').value.trim();
+    renderDonors(v);
+  });
+  document.getElementById('clearDonorSearch').addEventListener('click',()=>{
+    document.getElementById('searchDonorInput').value=''; renderDonors();
+  });
+
+  // Search patients
+  document.getElementById('searchPatientBtn').addEventListener('click',()=>{
+    const v=document.getElementById('searchPatientInput').value.trim();
+    renderPatients(v);
+  });
+  document.getElementById('clearPatientSearch').addEventListener('click',()=>{
+    document.getElementById('searchPatientInput').value=''; renderPatients();
+  });
+
+  // Export
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    const data=loadData()||defaultData();
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='bloodbank_data.json'; a.click(); URL.revokeObjectURL(url);
+  });
+
+  // Import
+  document.getElementById('importBtn').addEventListener('click',()=>{
+    if(confirm('Import sample data? Overwrites current data.')){
+      const d=defaultData();
+      d.donors=[{name:'Ram',blood:'O+',units:2,date:nowIso()},{name:'Geeta',blood:'A+',units:1,date:nowIso()}];
+      d.patients=[{name:'Patient1',blood:'B+',units:1,date:nowIso()}];
+      saveData(d); renderStock(); renderDonors(); renderPatients();
+    }
+  });
+});
+</script>
+</body>
+</html>
