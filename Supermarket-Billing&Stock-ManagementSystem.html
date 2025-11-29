@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grocery Billing - Full</title>
+  <style>
+    :root{--primary:#1f7a1f;--muted:#666;--card:#fff}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0;background:#f3f6f8;color:#222}
+    header{background:linear-gradient(90deg,#0b6623,#035e35);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+    header h1{margin:0;font-size:20px}
+    .wrap{max-width:1100px;margin:20px auto;padding:12px}
+    .grid{display:grid;gap:16px}
+    .cols-3{grid-template-columns:1fr 420px 320px}
+    .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(10,20,30,0.06)}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+    input,select,button{font-size:14px}
+    .controls input,.controls select{width:100%;padding:8px;margin-top:6px;border-radius:6px;border:1px solid #ddd}
+    .controls button{margin-top:10px;padding:10px 12px;border-radius:8px;border:0;background:var(--primary);color:#fff;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+    th{background:#fafafa}
+    .right{text-align:right}
+    .small{font-size:13px;color:var(--muted)}
+    .actions button{padding:6px 8px;border-radius:6px;border:0;cursor:pointer}
+    .btn-secondary{background:#eee}
+    .stock-list{max-height:260px;overflow:auto}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media(max-width:980px){.cols-3{grid-template-columns:1fr 1fr} .wrap{padding:8px}}
+    @media(max-width:700px){.cols-3{grid-template-columns:1fr} .controls .row{display:block} .controls .row>div{margin-bottom:8px}}
+
+    /* admin modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50}
+    .modal .box{width:360px;background:#fff;padding:18px;border-radius:10px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Grocery Billing — Simple & Offline</h1>
+    <div class="small">LocalStorage persistence • GST ready • Print-ready</div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid cols-3">
+      <!-- Left: Product & billing -->
+      <div class="card">
+        <h3>Create Bill</h3>
+        <div class="controls">
+          <label for="customerName">Customer name</label>
+          <input id="customerName" placeholder="Customer name (optional)" />
+
+          <label for="productSelect">Select product / search</label>
+          <input id="productSearch" placeholder="Search by name" />
+          <select id="productSelect" size="4" style="margin-top:8px"></select>
+
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input id="qty" type="number" min="1" value="1" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ddd" />
+            <button id="addBtn" style="padding:8px 12px;border-radius:6px;background:#0b6623;color:#fff;border:0;cursor:pointer">Add</button>
+          </div>
+
+          <table id="invoiceTable">
+            <thead>
+              <tr><th>Item</th><th class="right">Price</th><th class="right">Qty</th><th class="right">Total</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center">
+            <div class="small">Subtotal</div>
+            <div class="right"><b>₹<span id="subtotal">0</span></b></div>
+          </div>
+
+          <label style="margin-top:6px">GST %</label>
+          <input id="gstRate" type="number" min="0" value="5" />
+
+          <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center">
+            <div class="small">GST Amt</div>
+            <div class="right">₹<span id="gstAmt">0</span></div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center;font-size:18px">
+            <div><b>Total</b></div>
+            <div class="right"><b>₹<span id="grand">0</span></b></div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button id="printBtn">Print Bill</button>
+            <button id="saveBtn" class="btn-secondary">Save Invoice</button>
+            <button id="clearBtn" class="btn-secondary">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle: Stock & quick actions -->
+      <div class="card">
+        <h3>Stock Management</h3>
+
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="newName" placeholder="Name" />
+          <input id="newPrice" placeholder="Price" type="number" />
+          <input id="newQty" placeholder="Qty" type="number" />
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="addStockBtn">Add / Update Stock</button>
+          <button id="exportBtn" class="btn-secondary">Export JSON</button>
+          <button id="adminLoginBtn" class="btn-secondary">Admin</button>
+        </div>
+
+        <div class="stock-list" id="stockList" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Right: Saved invoices & settings -->
+      <div class="card">
+        <h3>Saved Invoices</h3>
+        <div id="invoiceList" style="max-height:260px;overflow:auto"></div>
+
+        <h4 style="margin-top:12px">Settings</h4>
+        <label>Shop name</label>
+        <input id="shopName" placeholder="My Grocery Shop" />
+        <label>GSTIN (optional)</label>
+        <input id="gstin" placeholder="Enter GSTIN" />
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="saveSettings" class="btn-secondary">Save</button>
+          <button id="resetStorage" class="btn-secondary">Reset All</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="small">This app stores data locally in your browser (localStorage).</div>
+        <div class="small">Designed for quick billing — works offline.</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Admin Modal -->
+  <div id="adminModal" style="display:none" class="modal">
+    <div class="box">
+      <h3>Admin Panel</h3>
+      <label>Admin password</label>
+      <input id="adminPass" type="password" />
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="unlockAdmin">Unlock</button>
+        <button id="closeAdmin">Close</button>
+      </div>
+      <div style="margin-top:8px" class="small">Default password: <b>admin123</b>. Change it in settings after login.</div>
+      <div id="adminArea" style="display:none;margin-top:12px">
+        <label>Change admin password</label>
+        <input id="newAdminPass" type="password" placeholder="new password" />
+        <button id="changeAdminPass" style="margin-top:8px">Change</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------- Data model & persistence -------------------- */
+    const STORAGE_KEYS = {
+      STOCK: 'grocery_stock_v1',
+      INVOICES: 'grocery_invoices_v1',
+      SETTINGS: 'grocery_settings_v1',
+      ADMIN: 'grocery_admin_v1'
+    };
+
+    // sample initial stock
+    const defaultStock = [
+      {id:1,name:'Rice (1kg)',price:50,qty:20},
+      {id:2,name:'Sugar (1kg)',price:45,qty:15},
+      {id:3,name:'Wheat (1kg)',price:60,qty:12},
+      {id:4,name:'Oil (1L)',price:120,qty:10},
+      {id:5,name:'Dal (1kg)',price:90,qty:8}
+    ];
+
+    function load(key, fallback){
+      try{const v = localStorage.getItem(key); return v?JSON.parse(v):fallback}catch(e){return fallback}
+    }
+    function save(key, value){localStorage.setItem(key,JSON.stringify(value))}
+
+    let stock = load(STORAGE_KEYS.STOCK, defaultStock);
+    let invoices = load(STORAGE_KEYS.INVOICES, []);
+    let settings = load(STORAGE_KEYS.SETTINGS, {shopName:'My Grocery Shop', gstin:''});
+    let admin = load(STORAGE_KEYS.ADMIN, {password:'admin123'});
+
+    /* -------------------- UI refs -------------------- */
+    const productSelect = document.getElementById('productSelect');
+    const productSearch = document.getElementById('productSearch');
+    const qtyEl = document.getElementById('qty');
+    const addBtn = document.getElementById('addBtn');
+    const invoiceTableBody = document.querySelector('#invoiceTable tbody');
+    const subtotalEl = document.getElementById('subtotal');
+    const gstRateEl = document.getElementById('gstRate');
+    const gstAmtEl = document.getElementById('gstAmt');
+    const grandEl = document.getElementById('grand');
+    const printBtn = document.getElementById('printBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const stockList = document.getElementById('stockList');
+    const addStockBtn = document.getElementById('addStockBtn');
+    const newName = document.getElementById('newName');
+    const newPrice = document.getElementById('newPrice');
+    const newQty = document.getElementById('newQty');
+    const exportBtn = document.getElementById('exportBtn');
+    const invoiceList = document.getElementById('invoiceList');
+    const shopNameEl = document.getElementById('shopName');
+    const gstinEl = document.getElementById('gstin');
+    const saveSettingsBtn = document.getElementById('saveSettings');
+    const resetStorageBtn = document.getElementById('resetStorage');
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminModal = document.getElementById('adminModal');
+    const adminPass = document.getElementById('adminPass');
+    const unlockAdmin = document.getElementById('unlockAdmin');
+    const closeAdmin = document.getElementById('closeAdmin');
+    const adminArea = document.getElementById('adminArea');
+    const changeAdminPass = document.getElementById('changeAdminPass');
+    const newAdminPass = document.getElementById('newAdminPass');
+    const customerName = document.getElementById('customerName');
+
+    /* -------------------- Invoice state -------------------- */
+    let invoiceItems = [];
+
+    /* -------------------- Helpers -------------------- */
+    function format(n){return Number(n).toFixed(2)}
+
+    function refreshStockList(){
+      stockList.innerHTML = '';
+      stock.forEach(it=>{
+        const el = document.createElement('div');
+        el.style.display='flex';el.style.justifyContent='space-between';el.style.alignItems='center';el.style.padding='6px 0';
+        el.innerHTML = `<div><b>${it.name}</b><div class="small">₹${it.price} • ${it.qty} pcs</div></div>`;
+        const actions = document.createElement('div');
+        actions.className='actions';
+        const addBtn = document.createElement('button'); addBtn.textContent='+'; addBtn.onclick=()=>{it.qty++; save(STORAGE_KEYS.STOCK,stock); refreshStockList();}
+        const subBtn = document.createElement('button'); subBtn.textContent='-'; subBtn.onclick=()=>{if(it.qty>0)it.qty--; save(STORAGE_KEYS.STOCK,stock); refreshStockList();}
+        const delBtn = document.createElement('button'); delBtn.textContent='Del'; delBtn.onclick=()=>{stock = stock.filter(s=>s.id!==it.id); save(STORAGE_KEYS.STOCK,stock); refreshStockList(); refreshProductSelect();}
+        actions.appendChild(addBtn); actions.appendChild(subBtn); actions.appendChild(delBtn);
+        el.appendChild(actions);
+        stockList.appendChild(el);
+      })
+    }
+
+    function refreshProductSelect(filter=''){
+      productSelect.innerHTML='';
+      const list = stock.filter(s=>s.name.toLowerCase().includes(filter.toLowerCase()));
+      list.forEach(it=>{
+        const opt = document.createElement('option');
+        opt.value = it.id;
+        opt.textContent = `${it.name} — ₹${it.price} (stock:${it.qty})`;
+        productSelect.appendChild(opt);
+      })
+    }
+
+    function refreshInvoice(){
+      invoiceTableBody.innerHTML='';
+      let subtotal = 0;
+      invoiceItems.forEach((it,idx)=>{
+        const tr = document.createElement('tr');
+        const total = it.price * it.qty;
+        subtotal += total;
+        tr.innerHTML = `<td>${it.name}</td><td class="right">₹${format(it.price)}</td><td class="right">${it.qty}</td><td class="right">₹${format(total)}</td>`;
+        tr.onclick = ()=>{ /* allow click to remove */ invoiceItems.splice(idx,1); refreshInvoice(); }
+        invoiceTableBody.appendChild(tr);
+      })
+      subtotalEl.textContent = format(subtotal);
+      const gstRate = Number(gstRateEl.value)||0;
+      const gstAmt = subtotal * gstRate/100;
+      gstAmtEl.textContent = format(gstAmt);
+      grandEl.textContent = format(subtotal + gstAmt);
+    }
+
+    /* -------------------- Events -------------------- */
+    productSearch.addEventListener('input', (e)=> refreshProductSelect(e.target.value));
+
+    addBtn.addEventListener('click', ()=>{
+      const id = Number(productSelect.value);
+      const qty = Number(qtyEl.value)||1;
+      const product = stock.find(s=>s.id===id);
+      if(!product){alert('Select product');return}
+      if(product.qty < qty){ if(!confirm('Not enough stock. Add anyway?')) return }
+      // reduce stock
+      product.qty = product.qty - qty;
+      invoiceItems.push({id:product.id,name:product.name,price:product.price,qty});
+      save(STORAGE_KEYS.STOCK,stock);
+      refreshInvoice(); refreshStockList(); refreshProductSelect(productSearch.value);
+    });
+
+    gstRateEl.addEventListener('change', refreshInvoice);
+
+    printBtn.addEventListener('click', ()=>{
+      const shop = shopNameEl.value || settings.shopName;
+      const gstin = gstinEl.value || settings.gstin || '';
+      const date = new Date().toLocaleString();
+      const w = window.open('','_blank');
+      const html = `
+        <html><head><title>Invoice</title></head><body>
+        <h2>${shop}</h2>
+        <div>${gstin?('GSTIN: '+gstin):''}</div>
+        <div><small>${date}</small></div>
+        <hr />
+        <table border="0" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse">
+        <thead><tr><th align="left">Item</th><th align="right">Price</th><th align="right">Qty</th><th align="right">Total</th></tr></thead>
+        <tbody>
+        ${invoiceItems.map(i=>`<tr><td>${i.name}</td><td align="right">₹${format(i.price)}</td><td align="right">${i.qty}</td><td align="right">₹${format(i.price*i.qty)}</td></tr>`).join('')}
+        </tbody>
+        </table>
+        <hr />
+        <div style="text-align:right">Subtotal: ₹${subtotalEl.textContent}</div>
+        <div style="text-align:right">GST (${gstRateEl.value}%): ₹${gstAmtEl.textContent}</div>
+        <div style="text-align:right;font-weight:bold">Grand: ₹${grandEl.textContent}</div>
+        <hr />
+        <div style="text-align:center"><small>Thank you!</small></div>
+        </body></html>`;
+      w.document.write(html); w.document.close(); w.print();
+    });
+
+    saveBtn.addEventListener('click', ()=>{
+      if(invoiceItems.length===0){alert('No items');return}
+      const invoice = {
+        id:Date.now(), customer:customerName.value||'', items:invoiceItems, subtotal:Number(subtotalEl.textContent), gst:Number(gstAmtEl.textContent), total:Number(grandEl.textContent), created:new Date().toISOString()
+      };
+      invoices.unshift(invoice); save(STORAGE_KEYS.INVOICES,invoices); renderInvoices(); alert('Invoice saved');
+    });
+
+    clearBtn.addEventListener('click', ()=>{ if(confirm('Clear current bill?')){ invoiceItems=[]; refreshInvoice(); } });
+
+    addStockBtn.addEventListener('click', ()=>{
+      const name = newName.value.trim(); const price = Number(newPrice.value)||0; const q = Number(newQty.value)||0;
+      if(!name || !price){alert('Provide name and price');return}
+      // find existing
+      const existing = stock.find(s=>s.name.toLowerCase()===name.toLowerCase());
+      if(existing){ existing.price = price; existing.qty = existing.qty + q; }
+      else{ stock.push({id:Date.now(),name,price,qty:q}); }
+      save(STORAGE_KEYS.STOCK,stock); newName.value='';newPrice.value='';newQty.value=''; refreshStockList(); refreshProductSelect(productSearch.value);
+    });
+
+    exportBtn.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify({stock,invoices,settings,admin},null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='grocery-data.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    function renderInvoices(){ invoiceList.innerHTML=''; invoices.forEach(inv=>{
+      const d = document.createElement('div'); d.style.padding='8px'; d.style.borderBottom='1px solid #f0f0f0';
+      d.innerHTML = `<div style="display:flex;justify-content:space-between"><div><b>${inv.customer||'Customer'}</b><div class="small">${new Date(inv.created).toLocaleString()}</div></div><div style="text-align:right">₹${format(inv.total)}</div></div>`;
+      d.onclick = ()=>{ if(confirm('Load invoice to view?')) loadInvoice(inv.id) };
+      invoiceList.appendChild(d);
+    }) }
+
+    function loadInvoice(id){ const inv = invoices.find(i=>i.id===id); if(!inv) return; invoiceItems = JSON.parse(JSON.stringify(inv.items)); refreshInvoice(); }
+
+    saveSettingsBtn.addEventListener('click', ()=>{
+      settings.shopName = shopNameEl.value || settings.shopName; settings.gstin = gstinEl.value || settings.gstin; save(STORAGE_KEYS.SETTINGS,settings); alert('Settings saved');
+    });
+
+    resetStorageBtn.addEventListener('click', ()=>{ if(confirm('Reset all local data? This cannot be undone')){ localStorage.clear(); location.reload(); } });
+
+    // admin modal
+    adminLoginBtn.addEventListener('click', ()=>{ adminModal.style.display='flex'; });
+    closeAdmin.addEventListener('click', ()=>{ adminModal.style.display='none'; adminPass.value=''; adminArea.style.display='none'; });
+    unlockAdmin.addEventListener('click', ()=>{
+      if(adminPass.value===admin.password){ adminArea.style.display='block'; alert('Admin unlocked'); } else alert('Wrong password');
+    });
+    changeAdminPass.addEventListener('click', ()=>{ if(!newAdminPass.value) return alert('Enter new pass'); admin.password = newAdminPass.value; save(STORAGE_KEYS.ADMIN,admin); alert('Password changed'); newAdminPass.value=''; adminModal.style.display='none'; });
+
+    /* -------------------- Init -------------------- */
+    function init(){
+      shopNameEl.value = settings.shopName || '';
+      gstinEl.value = settings.gstin || '';
+      refreshStockList(); refreshProductSelect(); renderInvoices(); refreshInvoice();
+    }
+
+    init();
+  </script>
+</body>
+</html>
