@@ -1,0 +1,8 @@
+exports.handler = async () => {
+    return {
+        statusCode: 200,
+        body: JSON.stringify({
+            "A+": 10, "O-": 5, "AB+": 4
+        })
+    };
+};
