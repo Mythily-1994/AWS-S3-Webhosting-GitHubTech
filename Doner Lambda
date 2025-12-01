@@ -1,0 +1,9 @@
+exports.handler = async (event) => {
+    const data = JSON.parse(event.body);
+
+    // DynamoDB insert
+    return {
+        statusCode: 200,
+        body: JSON.stringify({message: "Donor added"})
+    };
+};
